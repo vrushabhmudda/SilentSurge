@@ -1,0 +1,36 @@
+{
+    "name": "SilentSurge",
+    "version": "1.0.0",
+    "description": "Autonomous ICU sepsis detection system. Monitors real-time patient vitals, lab results, and medications across 93 MIMIC-III patients. Detects beta-blocker masking via self-correction and escalates high-risk cases to physicians.",
+    "url": "https://silentsurge-596073286491.us-central1.run.app/",
+    "capabilities": {
+      "streaming": false,
+      "parallel_analysis": true,
+      "self_correction": true
+    },
+    "skills": [
+      {
+        "id": "analyze_patient",
+        "name": "Sepsis Risk Analysis",
+        "description": "Calculates sepsis risk score for a patient using vitals, labs, and medication data from MIMIC-III"
+      },
+      {
+        "id": "monitor_realtime",
+        "name": "Real-Time Patient Monitoring",
+        "description": "Streams patient vitals tick-by-tick and triggers escalation when sepsis is suspected"
+      },
+      {
+        "id": "physician_briefing",
+        "name": "Physician Briefing Generator",
+        "description": "Generates clinical briefing using Groq LLaMA-3.3-70B for high-risk patients"
+      }
+    ],
+    "data_sources": [
+      "MIMIC-III ChartEvents (vitals)",
+      "MIMIC-III LabEvents (labs)",
+      "MIMIC-III Prescriptions (medications)"
+    ],
+    "sdg_alignment": "SDG 3 - Good Health and Well-Being",
+    "impact": "Sepsis kills 11 million people per year. 80% of deaths are preventable with early detection."
+  }
+  
