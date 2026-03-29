@@ -4,4 +4,3 @@ __pycache__/
 *.db
 .adk/
 .env
-data/mimic_samples/

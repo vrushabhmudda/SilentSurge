@@ -9,11 +9,11 @@ from groq import Groq
 from google.adk.agents import LlmAgent, ParallelAgent, LoopAgent
 from google.adk.tools import FunctionTool
 
-from silentsurge.agents.vitals_watcher import analyze_vitals
-from silentsurge.agents.lab_interpreter import analyze_labs
-from silentsurge.agents.med_reviewer import analyze_medications
-from silentsurge.data.patients import get_patient
-from silentsurge.data.stream import get_stream, reset_stream
+from agents.vitals_watcher import analyze_vitals
+from agents.lab_interpreter import analyze_labs
+from agents.med_reviewer import analyze_medications
+from data.patients import get_patient
+from data.stream import get_stream, reset_stream
 
 
 def monitor_patient_realtime(patient_id: str, ticks: int = 6) -> dict:
@@ -96,7 +96,7 @@ Write a direct, clinical briefing. Start with the patient name. End with a speci
 
 def analyze_all_patients() -> dict:
     """Analyze all ICU patients and return a summary of their sepsis risk."""
-    from silentsurge.data.patients import get_patients
+    from data.patients import get_patients
     results = []
     for patient in get_patients():
         result = calculate_sepsis_risk(patient["id"])
