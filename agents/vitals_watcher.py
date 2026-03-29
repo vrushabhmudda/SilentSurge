@@ -8,25 +8,25 @@ def analyze_vitals(patient: dict) -> dict:
     risk_score = 0
     v = patient["vitals"]
 
-    if v["heart_rate"] > 90:
-        flags.append(f"HIGH heart rate: {v['heart_rate']} bpm")
+    hr = v.get("heart_rate")
+    temp = v.get("temperature")
+    sbp = v.get("sbp")
+    spo2 = v.get("spo2")
+
+    if hr and hr > 90:
+        flags.append(f"HIGH heart rate: {hr} bpm")
         risk_score += 20
 
-    if v["hr_trend"] >= 5:
-        flags.append(f"RISING heart rate trend: +{v['hr_trend']} bpm/hr")
-        risk_score += 25
-
-    if v["temp"] >= 38.3:
-        flags.append(f"FEVER: {v['temp']}°C")
+    if temp and temp >= 38.3:
+        flags.append(f"FEVER: {temp}°C")
         risk_score += 20
 
-    if v["resp_rate"] >= 20:
-        flags.append(f"HIGH respiratory rate: {v['resp_rate']} breaths/min")
-        risk_score += 15
+    if sbp and sbp < 100:
+        flags.append(f"LOW blood pressure: {sbp} mmHg")
+        risk_score += 20
 
-    systolic = int(v["bp"].split("/")[0])
-    if systolic < 100:
-        flags.append(f"LOW blood pressure: {v['bp']}")
+    if spo2 and spo2 < 95:
+        flags.append(f"LOW SpO2: {spo2}%")
         risk_score += 20
 
     return {

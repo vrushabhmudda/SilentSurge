@@ -28,10 +28,8 @@ def monitor_patient_realtime(patient_id: str, ticks: int = 6) -> dict:
             escalation_tick = reading["tick"]
 
     final = timeline[-1]
-    
-    # Build stream-based risk score from alert count
     alert_count = final["alert_count"]
-    stream_risk = min(alert_count * 35, 100)  # 1 alert=35, 2=70, 3+=100
+    stream_risk = min(alert_count * 35, 100)
 
     summary = {
         "patient_id": patient_id,
@@ -41,7 +39,7 @@ def monitor_patient_realtime(patient_id: str, ticks: int = 6) -> dict:
         "escalation_at_tick": escalation_tick,
         "final_status": final["status"],
         "final_alerts": final["alerts"],
-        "stream_risk_score": stream_risk,  # ← pass this to briefing
+        "stream_risk_score": stream_risk,
     }
 
     if escalation_tick:
@@ -52,13 +50,14 @@ def monitor_patient_realtime(patient_id: str, ticks: int = 6) -> dict:
     return summary
 
 
-
 def reset_patient_monitor(patient_id: str) -> dict:
     """Reset a patient's monitoring stream back to baseline."""
     reset_stream(patient_id)
     return {"message": f"Stream for {patient_id} reset to baseline."}
 
+
 groq_client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+
 
 def generate_physician_briefing(patient_id: str,
                                  risk_score: int = None,
@@ -68,7 +67,6 @@ def generate_physician_briefing(patient_id: str,
     name = patient["name"] if patient else f"Patient {patient_id}"
     age  = patient["age"]  if patient else "Unknown"
 
-    # Use passed-in stream data if available, otherwise calculate from static
     if risk_score is None or flags is None:
         if not patient:
             return {"error": "No patient data available"}
@@ -104,7 +102,9 @@ def analyze_all_patients() -> dict:
         result = calculate_sepsis_risk(patient["id"])
         results.append(result)
     return {"patients": results}
-# ── Tools (your existing logic wrapped as ADK tools) ──────────────────────────
+
+
+# ── Tools ─────────────────────────────────────────────────────────────────────
 
 def check_vitals(patient_id: str) -> dict:
     """Check vital signs for a patient and flag sepsis indicators."""
@@ -113,12 +113,14 @@ def check_vitals(patient_id: str) -> dict:
         return {"error": f"Patient {patient_id} not found"}
     return analyze_vitals(patient)
 
+
 def check_labs(patient_id: str) -> dict:
     """Analyze lab results for a patient and flag critical values."""
     patient = get_patient(patient_id)
     if not patient:
         return {"error": f"Patient {patient_id} not found"}
     return analyze_labs(patient)
+
 
 def check_medications(patient_id: str) -> dict:
     """Review medications for a patient and detect masking drugs like beta-blockers."""
@@ -127,25 +129,26 @@ def check_medications(patient_id: str) -> dict:
         return {"error": f"Patient {patient_id} not found"}
     return analyze_medications(patient)
 
+
 def calculate_sepsis_risk(patient_id: str) -> dict:
     """Calculate final sepsis risk score by combining vitals, labs, and medication analysis."""
     patient = get_patient(patient_id)
     if not patient:
         return {"error": f"Patient {patient_id} not found"}
-    
+
     vitals = analyze_vitals(patient)
-    labs = analyze_labs(patient)
-    meds = analyze_medications(patient)
-    
+    labs   = analyze_labs(patient)
+    meds   = analyze_medications(patient)
+
     base_score = vitals["risk_score"] + labs["risk_score"] + meds["risk_adjustment"]
-    
+
     correction_applied = False
-    if meds["beta_blocker_masking"] and vitals["risk_score"] > 0:
+    if meds["beta_blocker_masking"]:  # ← FIXED: fires even when vitals look normal
         base_score += 25
         correction_applied = True
-    
+
     final_score = min(base_score, 100)
-    
+
     return {
         "patient_id": patient_id,
         "patient_name": patient["name"],
@@ -156,6 +159,7 @@ def calculate_sepsis_risk(patient_id: str) -> dict:
         "meds_flags": meds["flags"],
         "requires_escalation": final_score >= 60
     }
+
 
 # ── Specialist Agents ─────────────────────────────────────────────────────────
 
@@ -190,13 +194,15 @@ Beta-blockers suppress heart rate and hide the true severity of sepsis.""",
     tools=[FunctionTool(check_medications)],
 )
 
-# ── Parallel Agent (all 3 specialists run simultaneously) ────────────────────
+
+# ── Parallel Agent ────────────────────────────────────────────────────────────
 
 parallel_monitor = ParallelAgent(
     name="ParallelICUMonitor",
     description="Runs VitalsWatcher, LabInterpreter, and MedReviewer simultaneously across all data streams.",
     sub_agents=[vitals_agent, lab_agent, med_agent],
 )
+
 
 # ── Orchestrator Agent ────────────────────────────────────────────────────────
 
@@ -221,7 +227,7 @@ For real-time monitoring requests like "monitor PT009", "watch PT009", or "conti
     risk_score = stream_risk_score from the monitoring result
     flags = final_alerts from the monitoring result
 
-For single patient analysis requests like "analyze PT004" or "check PT004":
+For single patient analysis requests like "analyze 10006" or "check 10006":
 - Call calculate_sepsis_risk(patient_id)
 - If requires_escalation is True, also call generate_physician_briefing(patient_id)
 - Report risk score, all flags, and whether escalation is required
@@ -241,6 +247,7 @@ Always be direct and clinical. Never ask for confirmation before running tools."
     ],
 )
 
+
 # ── Root Agent ────────────────────────────────────────────────────────────────
 
 root_agent = LoopAgent(
@@ -249,4 +256,3 @@ root_agent = LoopAgent(
     sub_agents=[orchestrator],
     max_iterations=1,
 )
-
